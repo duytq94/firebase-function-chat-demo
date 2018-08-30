@@ -19,7 +19,7 @@ exports.sendNotification = functions.firestore
 			.then(querySnapshot => {
 				querySnapshot.forEach(documentSnapshot => {
 					console.log(`Push notification to ${documentSnapshot.data().nickname}`)
-					if (documentSnapshot.data().pushToken) {
+					if (documentSnapshot.data().pushToken && !documentSnapshot.data().isOnline) {
 						const payload = {
 							notification: {
 								title: `You have a message from ${idFrom}`,
