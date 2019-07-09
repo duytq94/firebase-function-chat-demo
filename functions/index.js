@@ -20,7 +20,7 @@ exports.sendNotification = functions.firestore
       .then(querySnapshot => {
         querySnapshot.forEach(infoUserTo => {
           console.log(`Found user to: ${infoUserTo.data().nickname}`)
-          if (infoUserTo.data().pushToken) {
+          if (infoUserTo.data().pushToken && infoUserTo.data().chattingWith !== idFrom) {
             // Get info user from (sent)
             admin
               .firestore()
@@ -29,22 +29,16 @@ exports.sendNotification = functions.firestore
               .get()
               .then(querySnapshot2 => {
                 querySnapshot2.forEach(infoUserFrom => {
-                  console.log(
-                    `Found user from: ${infoUserFrom.data().nickname}`
-                  )
+                  console.log(`Found user from: ${infoUserFrom.data().nickname}`)
                   const payload = {
                     notification: {
-                      title: `You have a message from "${
-                        infoUserFrom.data().nickname
-                      }"`,
+                      title: `You have a message from "${infoUserFrom.data().nickname}"`,
                       body: content,
                       badge: '1',
                       sound: 'default'
                     }
                   }
-                  admin
-                    .messaging()
-                    .sendToDevice(infoUserTo.data().pushToken, payload)
+                  admin.messaging().sendToDevice(infoUserTo.data().pushToken, payload)
                   console.log(`Notification is sent with content "${content}"`)
                 })
               })
