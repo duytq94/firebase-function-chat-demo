@@ -7,9 +7,12 @@ exports.sendNotification = functions.firestore
   .onCreate((snap, context) => {
     console.log('----------------start function--------------------')
 
-    const idFrom = snap.data().idFrom
-    const idTo = snap.data().idTo
-    const content = snap.data().content
+    const doc = snap.data()
+    console.log(doc)
+
+    const idFrom = doc.idFrom
+    const idTo = doc.idTo
+    const contentMessage = doc.content
 
     // Get push token user to (receive)
     admin
@@ -18,9 +21,9 @@ exports.sendNotification = functions.firestore
       .where('id', '==', idTo)
       .get()
       .then(querySnapshot => {
-        querySnapshot.forEach(infoUserTo => {
-          console.log(`Found user to: ${infoUserTo.data().nickname}`)
-          if (infoUserTo.data().pushToken && infoUserTo.data().chattingWith !== idFrom) {
+        querySnapshot.forEach(userTo => {
+          console.log(`Found user to: ${userTo.data().nickname}`)
+          if (userTo.data().pushToken && userTo.data().chattingWith !== idFrom) {
             // Get info user from (sent)
             admin
               .firestore()
@@ -28,18 +31,26 @@ exports.sendNotification = functions.firestore
               .where('id', '==', idFrom)
               .get()
               .then(querySnapshot2 => {
-                querySnapshot2.forEach(infoUserFrom => {
-                  console.log(`Found user from: ${infoUserFrom.data().nickname}`)
+                querySnapshot2.forEach(userFrom => {
+                  console.log(`Found user from: ${userFrom.data().nickname}`)
                   const payload = {
                     notification: {
-                      title: `You have a message from "${infoUserFrom.data().nickname}"`,
-                      body: content,
+                      title: `You have a message from "${userFrom.data().nickname}"`,
+                      body: contentMessage,
                       badge: '1',
                       sound: 'default'
                     }
                   }
-                  admin.messaging().sendToDevice(infoUserTo.data().pushToken, payload)
-                  console.log(`Notification is sent with content "${content}"`)
+                  // Let push to the target device
+                  admin
+                    .messaging()
+                    .sendToDevice(userTo.data().pushToken, payload)
+                    .then(response => {
+                      console.log('Successfully sent message:', response)
+                    })
+                    .catch(error => {
+                      console.log('Error sending message:', error)
+                    })
                 })
               })
           } else {
@@ -47,6 +58,5 @@ exports.sendNotification = functions.firestore
           }
         })
       })
-
     return null
   })
